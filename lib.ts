@@ -200,8 +200,8 @@ async function scan() {
 
 // 3. Create
 async function create(type: string, name: string, category?: string) {
-    if (!['concept', 'guide', 'decision'].includes(type)) {
-        console.error("❌ Invalid type. Use: concept, guide, or decision");
+    if (!['concept', 'guide', 'decision', 'term'].includes(type)) {
+        console.error("❌ Invalid type. Use: concept, guide, decision, or term");
         process.exit(1);
     }
 
@@ -210,10 +210,13 @@ async function create(type: string, name: string, category?: string) {
         process.exit(1);
     }
 
+    // Handle aliases
+    const actualType = type === 'term' ? 'concept' : type;
+
     // Sanitize name for filename
     const filename = name.replace(/[^a-zA-Z0-9\-_]/g, '') + ".md";
-    let subDir = type + "s"; // concept -> concepts
-    let templateName = `${type}-template.md`;
+    let subDir = actualType + "s"; // concept -> concepts
+    let templateName = `${actualType}-template.md`;
 
     // Build target path with category support
     let targetDir = join(KNOWLEDGE_ROOT, subDir);
@@ -336,7 +339,74 @@ async function generateIndex() {
     console.log(`✅ Updated: ${join(KNOWLEDGE_ROOT, "index.md")}`);
 }
 
-// 5. Search
+// 5. Glossary
+async function generateGlossary() {
+    console.log("📖 Generating Glossary...");
+    const conceptsDir = join(KNOWLEDGE_ROOT, "concepts");
+    
+    if (!(await exists(conceptsDir))) {
+         console.log("⚠️ No concepts directory found.");
+         return;
+    }
+
+    const terms: { name: string; path: string; definition: string; category: string }[] = [];
+
+    async function scan(dir: string, relativeCat: string) {
+        const entries = await readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name.startsWith('.')) continue;
+            const fullPath = join(dir, entry.name);
+            
+            if (entry.isDirectory()) {
+                await scan(fullPath, join(relativeCat, entry.name));
+            } else if (entry.name.endsWith('.md')) {
+                 const name = entry.name.replace('.md', '');
+                 const content = await readFile(fullPath, 'utf-8');
+                 
+                 // Extract Definition: Try to find "> Definition" or just the first blockquote
+                 let definition = "No definition provided.";
+                 
+                 // Match: ## Definition \n > content
+                 const defMatch = content.match(/## Definition.*?\n> (.*?)(?:\n|$)/i);
+                 if (defMatch) {
+                     definition = defMatch[1].trim();
+                 } else {
+                     // Fallback: match any blockquote at the start
+                     const quoteMatch = content.match(/^> (.*?)(?:\n|$)/m);
+                     if (quoteMatch) definition = quoteMatch[1].trim();
+                 }
+
+                 terms.push({
+                     name,
+                     path: join("concepts", relativeCat, entry.name),
+                     definition: definition.length > 100 ? definition.substring(0, 97) + "..." : definition,
+                     category: relativeCat || "General"
+                 });
+            }
+        }
+    }
+
+    await scan(conceptsDir, "");
+
+    // Sort by name
+    terms.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Generate MD
+    let content = "# Professional Terminology Glossary (专业术语表)\n\n";
+    content += "> Auto-generated from `concepts/` directory. Do not edit manually.\n\n";
+    content += "| Term | Category | Definition |\n";
+    content += "|------|----------|------------|\n";
+    
+    for (const term of terms) {
+        content += `| [${term.name}](./${term.path}) | \`${term.category}\` | ${term.definition} |\n`;
+    }
+
+    const glossaryPath = join(KNOWLEDGE_ROOT, "GLOSSARY.md");
+    await writeFile(glossaryPath, content);
+    console.log(`✅ Generated: ${glossaryPath}`);
+}
+
+// 6. Search
 async function search(keyword: string) {
     if (!keyword) {
         console.error("❌ Please provide a keyword.");
@@ -583,6 +653,9 @@ switch (command) {
     case 'index':
         generateIndex();
         break;
+    case 'glossary':
+        generateGlossary();
+        break;
     case 'search':
         search(args[1]);
         break;
@@ -596,18 +669,21 @@ Knowledge Base Manager
 Usage:
   init                          Initialize docs/knowledge structure
   scan                          Scan codebase for concepts
-  create <type> <name> [cat]    Create new doc (type: concept, guide, decision)
+  create <type> <name> [cat]    Create new doc (type: concept, guide, decision, term)
                                 Optional: category path (e.g., "auth/user")
   index                         Regenerate index.md
+  glossary                      Generate GLOSSARY.md (Professional Terminology Table)
   search <keyword>              Search knowledge base
   discover                      Analyze project structure and generate documentation checklist
 
 Examples:
   bun lib.ts init
+  bun lib.ts create term "DoubleEntry" accounting
   bun lib.ts create concept "UserAuthentication" auth/user
   bun lib.ts create guide "ErrorHandling" backend
   bun lib.ts create decision "WhyUsePostgres" database
   bun lib.ts index
+  bun lib.ts glossary
   bun lib.ts search "auth"
   bun lib.ts discover
         `);

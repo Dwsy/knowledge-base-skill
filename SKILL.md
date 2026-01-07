@@ -66,6 +66,7 @@ docs/knowledge/
 │   ├── [Source].md       # e.g. "ReactPatternConsensus.md"
 │   └── standards/        # 二级分类
 │       └── RESTfulAPI.md
+├── GLOSSARY.md           # 专业术语表（自动生成，包含定义摘要）
 └── index.md              # 自动生成的知识索引（支持多层级显示）
 ```
 
@@ -84,6 +85,7 @@ bun ~/.pi/agent/skills/knowledge-base/lib.ts scan
 bun ~/.pi/agent/skills/knowledge-base/lib.ts discover
 
 # 4. 创建知识条目（支持目录分类）
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create term "术语名称" [分类路径]     # alias for concept
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "术语名称" [分类路径]
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "指南标题" [分类路径]
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "决策标题" [分类路径]
@@ -102,7 +104,10 @@ bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "WhyUseCSSGrid" fro
 # 4. 搜索知识库
 bun ~/.pi/agent/skills/knowledge-base/lib.ts search "关键词"
 
-# 5. 生成/更新索引
+# 5. 生成专业术语表 (GLOSSARY.md)
+bun ~/.pi/agent/skills/knowledge-base/lib.ts glossary
+
+# 6. 生成/更新索引
 bun ~/.pi/agent/skills/knowledge-base/lib.ts index
 ```
 
@@ -122,6 +127,11 @@ bun ~/.pi/agent/skills/knowledge-base/lib.ts index
 
 ### 3. 行业共识集成
 通过 `external` 目录管理通用知识（如 RESTful 规范、React Hooks 规则），避免重复造轮子，明确本项目是遵循标准还是有特殊定制。
+
+### 4. 专业术语表维护 (`glossary`)
+自动扫描 `concepts/` 目录下的所有文档，提取定义（Definition）部分，生成扁平化的 `GLOSSARY.md` 表格。
+*   **用途**：提供快速查阅的术语字典，适合非技术人员或快速上下文对齐。
+*   **格式**：包含 Term (Link), Category, Definition 的 Markdown 表格。
 
 ## 最佳实践
 
