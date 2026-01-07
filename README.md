@@ -36,13 +36,23 @@ docs/knowledge/
 ### 2. 创建文档
 
 ```bash
-# 创建概念文档
+# 创建一级文档（无分类）
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "UserAuthentication"
 
-# 创建带分类的文档（多级支持）
+# 创建二级分类文档
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "User" auth
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "API" backend
+
+# 创建三级分类文档
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "AceTool" core/tools
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "ErrorHandling" backend/api
-bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "WhyUsePostgres" database/cache
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "Redis" database/cache
+
+# 创建四级或更深分类文档（支持无限层级）
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "MobileFirst" frontend/responsive/design
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "ProgressiveWebApp" frontend/pwa/advanced/optimization
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "ResponsiveLayout" frontend/css/flexbox
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "WhyUseCSSGrid" frontend/layout/modern/strategies
 ```
 
 ### 3. 扫描代码
@@ -53,13 +63,28 @@ bun ~/.pi/agent/skills/knowledge-base/lib.ts scan
 
 自动分析代码库，识别需要文档化的概念。
 
-### 4. 生成索引
+### 4. 发现项目结构并生成文档清单
+
+```bash
+bun ~/.pi/agent/skills/knowledge-base/lib.ts discover
+```
+
+分析项目目录结构，识别技术目录，并生成知识库文档清单和建议。
+
+**功能特点**:
+- 自动识别常见技术目录（auth, api, components, database 等）
+- 为每个目录推荐相关的概念和指南
+- 提供创建文档的完整命令
+- 显示文档完成进度
+- 支持去重（已存在的文档不会重复建议）
+
+### 5. 生成索引
 
 ```bash
 bun ~/.pi/agent/skills/knowledge-base/lib.ts index
 ```
 
-### 5. 搜索知识
+### 6. 搜索知识
 
 ```bash
 bun ~/.pi/agent/skills/knowledge-base/lib.ts search "keyword"
@@ -97,27 +122,44 @@ bun ~/.pi/agent/skills/knowledge-base/lib.ts search "keyword"
 ```
 docs/knowledge/
 ├── concepts/
-│   ├── KnowledgeBase.md
-│   ├── CurseOfKnowledge.md
-│   └── core/
-│       ├── tools/
-│       │   └── AceTool.md
-│       ├── workflow/
-│       │   └── Workhub.md
-│       └── architecture/
-│           └── SkillSystem.md
+│   ├── KnowledgeBase.md                    # 一级文档
+│   ├── CurseOfKnowledge.md                 # 一级文档
+│   ├── core/                               # 二级分类
+│   │   ├── tools/
+│   │   │   └── AceTool.md                  # 三级文档
+│   │   ├── workflow/
+│   │   │   └── Workhub.md                  # 三级文档
+│   │   └── architecture/
+│   │       └── SkillSystem.md              # 三级文档
+│   └── frontend/                           # 二级分类
+│       ├── responsive/                     # 三级分类
+│       │   └── design/                     # 四级分类
+│       │       └── MobileFirst.md          # 四级文档
+│       └── pwa/                            # 三级分类
+│           └── advanced/                   # 四级分类
+│               └── optimization/           # 五级分类
+│                   └── ProgressiveWebApp.md # 五级文档
 ├── guides/
-│   ├── HowToUseKnowledgeBase.md
-│   └── core/
-│       ├── development/
-│       │   └── HowToCreateSkill.md
-│       └── management/
-│           └── HowToOrganizeKnowledge.md
+│   ├── HowToUseKnowledgeBase.md            # 一级文档
+│   ├── core/                               # 二级分类
+│   │   ├── development/
+│   │   │   └── HowToCreateSkill.md         # 三级文档
+│   │   └── management/
+│   │       └── HowToOrganizeKnowledge.md   # 三级文档
+│   └── frontend/                           # 二级分类
+│       └── css/                            # 三级分类
+│           └── flexbox/                    # 四级分类
+│               └── ResponsiveLayout.md     # 四级文档
 ├── decisions/
-│   ├── 20260107-WhyWeBuiltKnowledgeBase.md
-│   └── core/
-│       └── language/
-│           └── 20260107-WhyUseTypeScript.md
+│   ├── 20260107-WhyWeBuiltKnowledgeBase.md # 一级文档
+│   ├── core/                               # 二级分类
+│   │   └── language/
+│   │       └── 20260107-WhyUseTypeScript.md # 三级文档
+│   └── frontend/                           # 二级分类
+│       └── layout/                         # 三级分类
+│           └── modern/                     # 四级分类
+│               └── strategies/             # 五级分类
+│                   └── 20260107-WhyUseCSSGrid.md # 五级文档
 └── external/
     └── RESTfulAPIConsensus.md
 ```
@@ -147,10 +189,59 @@ concepts/
 - ✅ 遇到不懂的术语时，立即创建概念文档
 - ✅ 代码 Review 时，如果需要解释超过 3 句，创建指南
 - ✅ 记录"为什么"而不仅仅是"怎么做"
-- ✅ 分类层级不超过 3 层
-- ✅ 定期更新索引和扫描代码
+- ✅ 分类层级不超过 5 层
+- ✅ 定期运行 `discover` 查看文档完成进度
+- ✅ 使用 `discover` 生成的清单系统化构建知识库
 - ❌ 不要使用递归定义
 - ❌ 不要忽略常见误区记录
+
+### Discover 功能详解
+
+**运行命令**:
+```bash
+bun ~/.pi/agent/skills/knowledge-base/lib.ts discover
+```
+
+**输出内容**:
+- `discovery_report.md`: 详细的发现报告
+
+**报告包含**:
+1. **项目概览**: 发现的技术目录数量、置信度统计
+2. **目录详情**: 每个技术目录的建议文档（概念和指南）
+3. **快速开始指南**: 系统化构建知识库的步骤
+4. **进度追踪**: 文档完成度百分比
+
+**支持的技术目录类型**:
+- `auth`: 认证和授权
+- `api`: API 设计和开发
+- `components`: 前端组件
+- `config`: 配置管理
+- `database`: 数据库相关
+- `utils`: 工具函数
+- `services`: 服务层
+- `models`: 数据模型
+- `hooks`: React Hooks
+- `store`: 状态管理
+- `middleware`: 中间件
+- `routes`: 路由
+- `tests`: 测试
+- `docker`: Docker 容器化
+- `deploy`: 部署
+
+**使用流程**:
+```bash
+# 1. 运行发现
+bun ~/.pi/agent/skills/knowledge-base/lib.ts discover
+
+# 2. 查看报告
+cat docs/knowledge/discovery_report.md
+
+# 3. 根据建议创建文档（复制报告中的命令）
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "Authentication" auth
+
+# 4. 重新运行发现查看进度
+bun ~/.pi/agent/skills/knowledge-base/lib.ts discover
+```
 
 ## 核心原则
 

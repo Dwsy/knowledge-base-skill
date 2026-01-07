@@ -32,22 +32,39 @@ description: 专业的知识库管理系统，旨在解决“知识诅咒”和�
 ```
 docs/knowledge/
 ├── concepts/             # 领域概念与术语 (名词解释)
-│   ├── [Term].md         # e.g. "DoubleEntryBookkeeping.md"
-│   └── auth/             # 分类目录（可选）
+│   ├── [Term].md         # 一级文档：e.g. "DoubleEntryBookkeeping.md"
+│   └── auth/             # 二级分类
 │       ├── User.md
 │       └── Session.md
+│   └── frontend/         # 二级分类
+│       ├── responsive/   # 三级分类
+│       │   └── design/   # 四级分类
+│       │       └── MobileFirst.md
+│       └── pwa/          # 三级分类
+│           └── advanced/ # 四级分类
+│               └── optimization/  # 五级分类
+│                   └── ProgressiveWebApp.md
 ├── guides/               # 操作指南与最佳实践 (How-to)
-│   ├── [Topic].md        # e.g. "ErrorHandlingStrategy.md"
-│   └── backend/          # 分类目录（可选）
+│   ├── [Topic].md        # 一级文档：e.g. "ErrorHandlingStrategy.md"
+│   └── backend/          # 二级分类
 │       ├── API.md
 │       └── Database.md
+│   └── frontend/         # 二级分类
+│       └── css/          # 三级分类
+│           └── flexbox/  # 四级分类
+│               └── ResponsiveLayout.md
 ├── decisions/            # 认知决策记录 (Why)
-│   ├── [Date]-[Topic].md # e.g. "20240101-WhyChooseRestOverGraphQL.md"
-│   └── database/         # 分类目录（可选）
+│   ├── [Date]-[Topic].md # 一级文档：e.g. "20240101-WhyChooseRestOverGraphQL.md"
+│   └── database/         # 二级分类
 │       └── 20240101-WhyUsePostgres.md
+│   └── frontend/         # 二级分类
+│       └── layout/       # 三级分类
+│           └── modern/   # 四级分类
+│               └── strategies/  # 五级分类
+│                   └── 20260107-WhyUseCSSGrid.md
 ├── external/             # 行业共识与外部参考
 │   ├── [Source].md       # e.g. "ReactPatternConsensus.md"
-│   └── standards/        # 分类目录（可选）
+│   └── standards/        # 二级分类
 │       └── RESTfulAPI.md
 └── index.md              # 自动生成的知识索引（支持多层级显示）
 ```
@@ -63,15 +80,24 @@ bun ~/.pi/agent/skills/knowledge-base/lib.ts init
 # 2. 扫描代码提取概念 (集成 ace-tool)
 bun ~/.pi/agent/skills/knowledge-base/lib.ts scan
 
-# 3. 创建知识条目（支持目录分类）
+# 3. 发现项目结构并生成文档清单
+bun ~/.pi/agent/skills/knowledge-base/lib.ts discover
+
+# 4. 创建知识条目（支持目录分类）
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "术语名称" [分类路径]
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "指南标题" [分类路径]
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "决策标题" [分类路径]
 
-# 示例：创建带分类的文档
+# 示例：创建带分类的文档（支持无限层级）
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "UserAuthentication" auth/user
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "ErrorHandling" backend/api
 bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "WhyUsePostgres" database
+
+# 三级和四级分类示例
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "MobileFirst" frontend/responsive/design
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "ProgressiveWebApp" frontend/pwa/advanced/optimization
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "ResponsiveLayout" frontend/css/flexbox
+bun ~/.pi/agent/skills/knowledge-base/lib.ts create decision "WhyUseCSSGrid" frontend/layout/modern/strategies
 
 # 4. 搜索知识库
 bun ~/.pi/agent/skills/knowledge-base/lib.ts search "关键词"

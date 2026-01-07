@@ -20,6 +20,85 @@ const REQUIRED_DIRS = [
   "external"    // 外部参考
 ];
 
+// 常见的技术目录和概念映射
+const TECHNICAL_PATTERNS = {
+  "auth": {
+    concepts: ["Authentication", "Authorization", "Session", "Token", "OAuth", "JWT"],
+    guides: ["HowToLogin", "PasswordSecurity", "SSOIntegration"],
+    category: "auth"
+  },
+  "api": {
+    concepts: ["API", "REST", "GraphQL", "Endpoint", "Middleware"],
+    guides: ["APIDesign", "APIVersioning", "ErrorHandling"],
+    category: "backend/api"
+  },
+  "components": {
+    concepts: ["Component", "Props", "State", "Lifecycle", "Hooks"],
+    guides: ["ComponentDesign", "StateManagement", "PerformanceOptimization"],
+    category: "frontend/components"
+  },
+  "config": {
+    concepts: ["Configuration", "Environment", "Settings"],
+    guides: ["ConfigManagement", "EnvironmentVariables"],
+    category: "common/config"
+  },
+  "database": {
+    concepts: ["Database", "Schema", "Migration", "Query", "Transaction"],
+    guides: ["DatabaseDesign", "QueryOptimization", "BackupStrategy"],
+    category: "backend/database"
+  },
+  "utils": {
+    concepts: ["Utility", "Helper", "CommonFunctions"],
+    guides: ["UtilityFunctions", "CodeReuse"],
+    category: "common/utils"
+  },
+  "services": {
+    concepts: ["Service", "BusinessLogic", "ServiceLayer"],
+    guides: ["ServiceDesign", "BusinessRules"],
+    category: "backend/services"
+  },
+  "models": {
+    concepts: ["Model", "Entity", "DataModel"],
+    guides: ["ModelDesign", "DataValidation"],
+    category: "backend/models"
+  },
+  "hooks": {
+    concepts: ["Hook", "CustomHook", "SideEffect"],
+    guides: ["HookUsage", "CustomHooks"],
+    category: "frontend/hooks"
+  },
+  "store": {
+    concepts: ["Store", "State", "Redux", "Context", "StateManagement"],
+    guides: ["StateManagement", "ReduxPattern", "ContextAPI"],
+    category: "frontend/state"
+  },
+  "middleware": {
+    concepts: ["Middleware", "Interceptor", "Pipeline"],
+    guides: ["MiddlewareDesign", "RequestProcessing"],
+    category: "backend/middleware"
+  },
+  "routes": {
+    concepts: ["Route", "Router", "Navigation", "URL"],
+    guides: ["Routing", "RouteProtection", "Navigation"],
+    category: "frontend/routing"
+  },
+  "tests": {
+    concepts: ["Test", "UnitTest", "IntegrationTest", "E2ETest"],
+    guides: ["TestingStrategy", "TestDrivenDevelopment"],
+    category: "quality/testing"
+  },
+  "docker": {
+    concepts: ["Docker", "Container", "Image", "Dockerfile"],
+    guides: ["DockerSetup", "Containerization"],
+    category: "infrastructure/docker"
+  },
+  "deploy": {
+    concepts: ["Deployment", "CI", "CD", "Pipeline"],
+    guides: ["DeploymentStrategy", "CI/CDSetup"],
+    category: "infrastructure/deployment"
+  }
+};
+
 async function exists(path: string) {
   try {
     await stat(path);
@@ -301,6 +380,192 @@ async function search(keyword: string) {
     }
 }
 
+// 6. Discover: 基于目录结构发现并生成知识库清单
+async function discover() {
+    console.log("🔬 Discovering knowledge base structure and generating checklist...\n");
+
+    const discoveries: {
+        directory: string;
+        type: string;
+        suggestedConcepts: string[];
+        suggestedGuides: string[];
+        category: string;
+        confidence: number;
+    }[] = [];
+
+    // 扫描项目目录
+    async function scanProjectDir(dir: string, depth = 0): Promise<void> {
+        if (depth > 5) return; // 限制深度
+
+        const entries = await readdir(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            if (entry.name.startsWith('.') || entry.name === 'node_modules' || 
+                entry.name === 'dist' || entry.name === 'build' || 
+                entry.name === 'docs' || entry.name === '.git') continue;
+
+            const fullPath = join(dir, entry.name);
+            const dirName = entry.name.toLowerCase();
+
+            // 检查是否匹配已知的技术目录模式
+            for (const [pattern, info] of Object.entries(TECHNICAL_PATTERNS)) {
+                if (dirName.includes(pattern)) {
+                    const confidence = dirName === pattern ? 1.0 : 0.8;
+                    
+                    // 检查是否已有相关文档
+                    const existingConcepts: string[] = [];
+                    const existingGuides: string[] = [];
+
+                    async function checkExistingDocs(categoryPath: string) {
+                        const conceptsDir = join(KNOWLEDGE_ROOT, "concepts", categoryPath);
+                        const guidesDir = join(KNOWLEDGE_ROOT, "guides", categoryPath);
+
+                        if (await exists(conceptsDir)) {
+                            const files = await readdir(conceptsDir);
+                            existingConcepts.push(...files.filter(f => f.endsWith('.md')).map(f => f.replace('.md', '')));
+                        }
+
+                        if (await exists(guidesDir)) {
+                            const files = await readdir(guidesDir);
+                            existingGuides.push(...files.filter(f => f.endsWith('.md')).map(f => f.replace('.md', '')));
+                        }
+                    }
+
+                    await checkExistingDocs(info.category);
+
+                    discoveries.push({
+                        directory: fullPath.replace(process.cwd() + '/', ''),
+                        type: pattern,
+                        suggestedConcepts: info.concepts.filter(c => !existingConcepts.some(e => e.toLowerCase().includes(c.toLowerCase()))),
+                        suggestedGuides: info.guides.filter(g => !existingGuides.some(e => e.toLowerCase().includes(g.toLowerCase()))),
+                        category: info.category,
+                        confidence: confidence
+                    });
+                }
+            }
+
+            if (entry.isDirectory()) {
+                await scanProjectDir(fullPath, depth + 1);
+            }
+        }
+    }
+
+    await scanProjectDir(process.cwd());
+
+    // 生成发现报告
+    const reportPath = join(KNOWLEDGE_ROOT, "discovery_report.md");
+
+    let reportContent = `# Knowledge Base Discovery Report\n\n`;
+    reportContent += `> Generated on: ${new Date().toISOString()}\n`;
+    reportContent += `> Project: ${process.cwd()}\n\n`;
+    reportContent += `> This report analyzes your project structure and suggests knowledge base documentation.\n\n`;
+
+    if (discoveries.length === 0) {
+        reportContent += `## 📊 Summary\n\n`;
+        reportContent += `No technical directories were detected in this project.\n`;
+        reportContent += `\nRecommendation: Review your project structure and identify key domain concepts.\n`;
+    } else {
+        reportContent += `## 📊 Summary\n\n`;
+        reportContent += `- **Total directories discovered**: ${discoveries.length}\n`;
+        reportContent += `- **High confidence discoveries**: ${discoveries.filter(d => d.confidence >= 0.9).length}\n`;
+        reportContent += `- **Medium confidence discoveries**: ${discoveries.filter(d => d.confidence >= 0.7 && d.confidence < 0.9).length}\n\n`;
+
+        // 按置信度排序
+        const sortedDiscoveries = discoveries.sort((a, b) => b.confidence - a.confidence);
+
+        for (const discovery of sortedDiscoveries) {
+            const confidenceStars = '⭐'.repeat(Math.round(discovery.confidence * 5));
+            reportContent += `---\n\n`;
+            reportContent += `## 📁 ${discovery.directory}\n`;
+            reportContent += `\n**Type**: ${discovery.type}\n`;
+            reportContent += `**Confidence**: ${confidenceStars} (${(discovery.confidence * 100).toFixed(0)}%)\n`;
+            reportContent += `**Suggested Category**: \`${discovery.category}\`\n\n`;
+
+            if (discovery.suggestedConcepts.length > 0) {
+                reportContent += `### 📚 Suggested Concepts\n\n`;
+                for (const concept of discovery.suggestedConcepts) {
+                    reportContent += `- [ ] **${concept}**\n`;
+                    reportContent += `  \`\`\`bash\n`;
+                    reportContent += `  bun ~/.pi/agent/skills/knowledge-base/lib.ts create concept "${concept}" ${discovery.category}\n`;
+                    reportContent += `  \`\`\`\n\n`;
+                }
+            }
+
+            if (discovery.suggestedGuides.length > 0) {
+                reportContent += `### 📖 Suggested Guides\n\n`;
+                for (const guide of discovery.suggestedGuides) {
+                    reportContent += `- [ ] **${guide}**\n`;
+                    reportContent += `  \`\`\`bash\n`;
+                    reportContent += `  bun ~/.pi/agent/skills/knowledge-base/lib.ts create guide "${guide}" ${discovery.category}\n`;
+                    reportContent += `  \`\`\`\n\n`;
+                }
+            }
+
+            if (discovery.suggestedConcepts.length === 0 && discovery.suggestedGuides.length === 0) {
+                reportContent += `✅ **All suggested documents already exist!**\n\n`;
+            }
+        }
+
+        // 生成快速开始指南
+        reportContent += `---\n\n`;
+        reportContent += `## 🚀 Quick Start Guide\n\n`;
+        reportContent += `Here's how to start documenting your knowledge base:\n\n`;
+
+        const totalSuggestions = sortedDiscoveries.reduce((sum, d) => 
+            sum + d.suggestedConcepts.length + d.suggestedGuides.length, 0
+        );
+
+        if (totalSuggestions > 0) {
+            reportContent += `1. **Generate index**: Run \`bun ~/.pi/agent/skills/knowledge-base/lib.ts index\`\n`;
+            reportContent += `2. **Create top-priority concepts**: Start with high-confidence discoveries above\n`;
+            reportContent += `3. **Review and customize**: Adapt the suggested categories to fit your project\n`;
+            reportContent += `4. **Iterate**: Run discover again after adding documents to see progress\n\n`;
+        } else {
+            reportContent += `✨ Great job! Your knowledge base is well-documented.\n`;
+            reportContent += `\nConsider:\n`;
+            reportContent += `- Running \`bun ~/.pi/agent/skills/knowledge-base/lib.ts scan\` to find code-level concepts\n`;
+            reportContent += `- Adding domain-specific concepts not covered by standard patterns\n`;
+        }
+
+        // 生成进度追踪
+        reportContent += `---\n\n`;
+        reportContent += `## 📈 Progress Tracking\n\n`;
+        
+        const totalConcepts = sortedDiscoveries.reduce((sum, d) => sum + d.suggestedConcepts.length, 0);
+        const totalGuides = sortedDiscoveries.reduce((sum, d) => sum + d.suggestedGuides.length, 0);
+        const progress = totalSuggestions === 0 ? 100 : Math.round(
+            ((sortedDiscoveries.reduce((sum, d) => {
+                const total = d.suggestedConcepts.length + d.suggestedGuides.length;
+                const existing = (d.suggestedConcepts.length === 0 && d.suggestedGuides.length === 0) ? 1 : 0;
+                return sum + (total === 0 ? 1 : existing);
+            }, 0)) / sortedDiscoveries.length) * 100
+        );
+
+        reportContent += `- **Suggested concepts remaining**: ${totalConcepts}\n`;
+        reportContent += `- **Suggested guides remaining**: ${totalGuides}\n`;
+        reportContent += `- **Estimated completion**: ${progress}%\n\n`;
+    }
+
+    await writeFile(reportPath, reportContent);
+
+    console.log(`✅ Discovery complete! Report saved to: ${reportPath}`);
+    console.log(`\n📊 Found ${discoveries.length} technical directories`);
+    
+    const totalSuggestions = discoveries.reduce((sum, d) => 
+        sum + d.suggestedConcepts.length + d.suggestedGuides.length, 0
+    );
+    
+    if (totalSuggestions > 0) {
+        console.log(`💡 ${totalSuggestions} document suggestions generated`);
+        console.log(`\nNext steps:`);
+        console.log(`  1. Review the report: ${reportPath}`);
+        console.log(`  2. Create suggested documents using the provided commands`);
+        console.log(`  3. Run 'index' to update the knowledge base index`);
+    } else {
+        console.log(`✨ No new suggestions - your knowledge base is comprehensive!`);
+    }
+}
+
 // Main Dispatcher
 const args = process.argv.slice(2);
 const command = args[0];
@@ -321,6 +586,9 @@ switch (command) {
     case 'search':
         search(args[1]);
         break;
+    case 'discover':
+        discover();
+        break;
     default:
         console.log(`
 Knowledge Base Manager
@@ -332,6 +600,7 @@ Usage:
                                 Optional: category path (e.g., "auth/user")
   index                         Regenerate index.md
   search <keyword>              Search knowledge base
+  discover                      Analyze project structure and generate documentation checklist
 
 Examples:
   bun lib.ts init
@@ -340,5 +609,6 @@ Examples:
   bun lib.ts create decision "WhyUsePostgres" database
   bun lib.ts index
   bun lib.ts search "auth"
+  bun lib.ts discover
         `);
 }
