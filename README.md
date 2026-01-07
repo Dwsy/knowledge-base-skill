@@ -12,6 +12,11 @@
 - 🔎 **全文搜索**: 支持关键词搜索所有知识文档
 - 💡 **认知对齐**: 决策记录包含"认知对齐"章节
 - 📚 **行业共识**: 整合标准规范，避免重复定义
+- 🤖 **AI 驱动**: 可配合 Knowledge Builder Extension 实现自动化文档生成
+
+## 相关项目
+
+- **[Knowledge Builder Extension](https://github.com/Dwsy/knowledge-builder-extension)**: 使用自然语言和 AI 自动构建知识库的扩展工具
 
 ## 快速开始
 
