@@ -36,5 +36,6 @@ logs/
 *~
 
 # OS
-Thumbs.db.ace-tool/
+Thumbs.db
+.ace-tool/
 
